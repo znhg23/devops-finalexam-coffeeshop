@@ -82,15 +82,6 @@ You can monitor services on the EC2 instance with:
 docker stats
 docker-compose logs -f
 
-## Database Access
-
-- Host: coffee-db.c1yogcae2zbe.ap-southeast-1.rds.amazonaws.com
-- Port: 5432
-- Database: coffee
-- Username: coffeeuser
-- Password: coffeepass123
-- SSL: disabled via parameter group (rds.force_ssl = 0)
-
 ## Final Submission Checklist
 
 | Task                            | Status  |
