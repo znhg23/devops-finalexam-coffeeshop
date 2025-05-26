@@ -1,0 +1,100 @@
+version: "3.8"
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.11-management-alpine
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  product:
+    image: znhg23/go-coffeeshop-product
+    container_name: product
+    environment:
+      APP_NAME: product
+      PG_DSN_URL: host=coffee-db.c1yogcae2zbe.ap-southeast-1.rds.amazonaws.com user=coffeeuser password=coffeepass123 dbname=coffee sslmode=disable
+      RABBITMQ_URL: amqp://user:password@rabbitmq:5672/
+    ports:
+      - "5001:5001"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  counter:
+    image: znhg23/go-coffeeshop-counter
+    container_name: counter
+    environment:
+      APP_NAME: counter
+      IN_DOCKER: "true"
+      PG_DSN_URL: host=coffee-db.c1yogcae2zbe.ap-southeast-1.rds.amazonaws.com user=coffeeuser password=coffeepass123 dbname=coffee sslmode=disable
+      RABBITMQ_URL: amqp://user:password@rabbitmq:5672/
+      PRODUCT_CLIENT_URL: product:5001
+    ports:
+      - "5002:5002"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      product:
+        condition: service_started
+
+  barista:
+    image: znhg23/go-coffeeshop-barista
+    container_name: barista
+    environment:
+      APP_NAME: barista
+      IN_DOCKER: "true"
+      PG_DSN_URL: host=coffee-db.c1yogcae2zbe.ap-southeast-1.rds.amazonaws.com user=coffeeuser password=coffeepass123 dbname=coffee sslmode=disable
+      RABBITMQ_URL: amqp://user:password@rabbitmq:5672/
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  kitchen:
+    image: znhg23/go-coffeeshop-kitchen
+    container_name: kitchen
+    environment:
+      APP_NAME: kitchen
+      IN_DOCKER: "true"
+      PG_DSN_URL: host=coffee-db.c1yogcae2zbe.ap-southeast-1.rds.amazonaws.com user=coffeeuser password=coffeepass123 dbname=coffee sslmode=disable
+      RABBITMQ_URL: amqp://user:password@rabbitmq:5672/
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  proxy:
+    image: znhg23/go-coffeeshop-proxy
+    container_name: proxy
+    environment:
+      APP_NAME: proxy
+      GRPC_PRODUCT_HOST: product
+      GRPC_PRODUCT_PORT: 5001
+      GRPC_COUNTER_HOST: counter
+      GRPC_COUNTER_PORT: 5002
+    ports:
+      - "5000:5000"
+    depends_on:
+      product:
+        condition: service_started
+      counter:
+        condition: service_started
+
+  web:
+    image: znhg23/go-coffeeshop-web
+    container_name: web
+    environment:
+      REVERSE_PROXY_URL: proxy:5000
+      WEB_PORT: 8888
+    ports:
+      - "8888:8888"
+    depends_on:
+      proxy:
+        condition: service_started
