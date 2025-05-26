@@ -1,0 +1,11 @@
+name: 🔍 Debug EC2 Host Secret
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print EC2_HOST (should be masked)
+        run: echo "EC2_HOST is: ${{ secrets.EC2_HOST }}"
