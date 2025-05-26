@@ -15,7 +15,8 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
-          script: 
+          script: |
             docker-compose pull
             docker-compose down
             docker-compose up -d
+
